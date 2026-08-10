@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaali</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+  :root{
+    --void:#08060f;
+    --ink:#0f0a1e;
+    --violet:#241340;
+    --magenta:#c92f80;
+    --ember:#e8b34a;
+    --mist:#f2eee9;
+    --dim:#9a8fb5;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--mist);
+    font-family:'Manrope',sans-serif;
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ambient background */
+  .bg{
+    position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(201,47,128,0.28), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 15% 100%, rgba(232,179,74,0.10), transparent 60%),
+      radial-gradient(ellipse 70% 60% at 100% 80%, rgba(36,19,64,0.6), transparent 60%),
+      var(--void);
+  }
+  .bg canvas{position:absolute; inset:0; width:100%; height:100%;}
+
+  .app{
+    position:relative; z-index:1;
+    height:100dvh; width:100%;
+    display:flex; flex-direction:column;
+  }
+
+  /* header */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 20px 14px;
+    flex-shrink:0;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .orb{
+    width:38px; height:38px; border-radius:50%; flex-shrink:0;
+    background: radial-gradient(circle at 35% 30%, #ffe3b0, var(--ember) 35%, var(--magenta) 70%, var(--violet) 100%);
+    box-shadow: 0 0 18px 2px rgba(201,47,128,0.55), 0 0 40px 6px rgba(232,179,74,0.15);
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+  .orb.busy{animation: breathe 0.9s ease-in-out infinite, spin 3s linear infinite;}
+  @keyframes breathe{ 0%,100%{transform:scale(1); filter:brightness(1);} 50%{transform:scale(1.12); filter:brightness(1.25);} }
+  @keyframes spin{ from{filter:hue-rotate(0deg);} to{filter:hue-rotate(40deg);} }
+  .brand h1{
+    font-family:'Cinzel',serif; font-weight:700; letter-spacing:0.08em;
+    font-size:20px; margin:0; color:var(--mist);
+    text-shadow:0 0 20px rgba(201,47,128,0.3);
+  }
+  .brand span{display:block; font-size:10px; letter-spacing:0.18em; color:var(--dim); font-weight:500; text-transform:uppercase; margin-top:1px;}
+  .gear{
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    color:var(--mist); width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:16px;
+  }
+  .gear:active{background:rgba(255,255,255,0.12);}
+
+  /* tabs */
+  .tabs{
+    display:flex; gap:6px; padding:0 20px 14px; flex-shrink:0;
+  }
+  .tab{
+    flex:1; text-align:center; padding:9px 0; border-radius:999px;
+    font-size:13px; font-weight:600; letter-spacing:0.02em;
+    background:rgba(255,255,255,0.04); color:var(--dim);
+    border:1px solid rgba(255,255,255,0.07);
+    cursor:pointer; transition:all .2s;
+  }
+  .tab.active{
+    background:linear-gradient(135deg, var(--magenta), #8a2560);
+    color:#fff; border-color:transparent;
+    box-shadow:0 4px 16px rgba(201,47,128,0.35);
+  }
+
+  /* content area */
+  main{
+    flex:1; overflow-y:auto; padding:8px 16px 16px;
+    display:flex; flex-direction:column; gap:14px;
+    -webkit-overflow-scrolling:touch;
+  }
+  main::-webkit-scrollbar{width:4px;}
+  main::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12); border-radius:4px;}
+
+  .msg{max-width:86%; display:flex; flex-direction:column; gap:6px; animation:rise .35s ease;}
+  @keyframes rise{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  .msg.user{align-self:flex-end; align-items:flex-end;}
+  .msg.kaali{align-self:flex-start; align-items:flex-start;}
+  .bubble{
+    padding:12px 15px; border-radius:16px; font-size:14.5px; line-height:1.5;
+    white-space:pre-wrap; word-wrap:break-word;
+  }
+  .msg.user .bubble{
+    background:linear-gradient(135deg, #3a1a52, #241340);
+    border:1px solid rgba(232,179,74,0.15);
+    border-bottom-right-radius:4px;
+  }
+  .msg.kaali .bubble{
+    background:rgba(255,255,255,0.045);
+    border:1px solid rgba(201,47,128,0.18);
+    border-bottom-left-radius:4px;
+  }
+  .msg .who{font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--dim); padding:0 4px;}
+  .media{max-width:100%; border-radius:14px; overflow:hidden; border:1px solid rgba(232,179,74,0.2);}
+  .media img, .media video{display:block; width:100%; max-height:340px; object-fit:cover;}
+
+  .typing{display:flex; gap:4px; padding:14px 15px;}
+  .typing span{width:6px; height:6px; border-radius:50%; background:var(--magenta); animation:blink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+
+  .empty{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; color:var(--dim); gap:10px; padding:20px;
+  }
+  .empty .glyph{font-size:38px; opacity:.7;}
+  .empty h2{font-family:'Cinzel',serif; color:var(--mist); font-weight:600; font-size:18px; margin:0; letter-spacing:0.04em;}
+  .empty p{font-size:13px; max-width:260px; margin:0; line-height:1.5;}
+
+  /* input bar */
+  .inputbar{
+    flex-shrink:0; padding:10px 14px calc(14px + env(safe-area-inset-bottom));
+    display:flex; gap:8px; align-items:flex-end;
+    background:linear-gradient(to top, rgba(8,6,15,0.95), rgba(8,6,15,0.4));
+  }
+  .inputbar textarea{
+    flex:1; resize:none; max-height:110px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
+    border-radius:20px; padding:12px 16px; color:var(--mist); font-size:15px;
+    font-family:inherit; outline:none; line-height:1.4;
+  }
+  .inputbar textarea:focus{border-color:rgba(201,47,128,0.5);}
+  .inputbar textarea::placeholder{color:var(--dim);}
+  .send{
+    width:44px; height:44px; border-radius:50%; flex-shrink:0; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--ember), var(--magenta));
+    color:#1a0f12; font-size:18px; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 14px rgba(201,47,128,0.4);
+  }
+  .send:disabled{opacity:.4;}
+  .send:active{transform:scale(0.93);}
+
+  .aspect-row{display:flex; gap:8px; padding:0 4px 4px; flex-wrap:wrap;}
+  .chip{
+    font-size:11px; padding:5px 10px; border-radius:999px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--dim);
+  }
+  .chip.on{background:rgba(201,47,128,0.25); color:var(--mist); border-color:var(--magenta);}
+
+  /* modal */
+  .modal-wrap{
+    position:fixed; inset:0; z-index:10; display:none;
+    background:rgba(5,4,10,0.75); backdrop-filter:blur(6px);
+    align-items:flex-end; justify-content:center;
+  }
+  .modal-wrap.show{display:flex;}
+  .modal{
+    width:100%; max-width:480px; background:var(--ink);
+    border:1px solid rgba(232,179,74,0.2); border-bottom:none;
+    border-radius:22px 22px 0 0; padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+    animation:slideup .3s ease;
+  }
+  @keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal h3{font-family:'Cinzel',serif; margin:0 0 6px; font-size:17px; letter-spacing:0.03em;}
+  .modal p{font-size:12.5px; color:var(--dim); line-height:1.5; margin:0 0 16px;}
+  .modal label{font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); display:block; margin-bottom:6px;}
+  .modal input[type=password], .modal input[type=text], .modal select{
+    width:100%; padding:12px 14px; border-radius:12px; margin-bottom:14px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14);
+    color:var(--mist); font-size:14px; font-family:inherit; outline:none;
+  }
+  .modal select{-webkit-appearance:none; appearance:none;}
+  .modal .save-btn{
+    width:100%; padding:13px; border-radius:12px; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--ember), var(--magenta)); color:#1a0f12;
+    font-weight:700; font-size:14.5px; letter-spacing:0.02em;
+  }
+  .modal .close-x{position:absolute; top:18px; right:18px; color:var(--dim); font-size:20px; background:none; border:none;}
+  .modal-inner{position:relative;}
+  .warn{
+    font-size:11px; color:#f0c1a0; background:rgba(232,120,74,0.1);
+    border:1px solid rgba(232,120,74,0.25); padding:9px 11px; border-radius:10px; margin-bottom:14px; line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg"><canvas id="stars"></canvas></div>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="orb" id="orb"></div>
+      <div>
+        <h1>KAALI</h1>
+        <span id="modelLabel">chat mode</span>
+      </div>
+    </div>
+    <button class="gear" id="openSettings">⚙</button>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="chat">Chat</div>
+    <div class="tab" data-tab="image">Image</div>
+    <div class="tab" data-tab="video">Video</div>
+  </div>
+
+  <main id="feed">
+    <div class="empty" id="emptyState">
+      <div class="glyph">✦</div>
+      <h2>Kaali is listening</h2>
+      <p>Add your xAI API key in settings, then talk, imagine an image, or conjure a video.</p>
+    </div>
+  </main>
+
+  <div id="videoOptions" class="aspect-row" style="display:none; padding:0 16px;">
+    <div class="chip on" data-ar="16:9">16:9</div>
+    <div class="chip" data-ar="9:16">9:16</div>
+    <div class="chip" data-ar="1:1">1:1</div>
+  </div>
+
+  <div class="inputbar">
+    <textarea id="input" rows="1" placeholder="Speak to Kaali..."></textarea>
+    <button class="send" id="sendBtn">➤</button>
+  </div>
+</div>
+
+<div class="modal-wrap" id="modalWrap">
+  <div class="modal">
+    <div class="modal-inner">
+      <button class="close-x" id="closeModal">✕</button>
+      <h3>Kaali's Key</h3>
+      <p>Your xAI API key stays only in this browser tab's memory — it is never saved, stored, or sent anywhere but api.x.ai.</p>
+      <div class="warn">⚠ Never paste a real API key into a chat conversation with anyone (including an AI). If you've done that before, revoke that key in your xAI console and generate a fresh one to use here.</div>
+      <label>xAI API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="xai-...">
+      <label>Chat model</label>
+      <select id="chatModel">
+        <option value="grok-4.3">grok-4.3 (flagship)</option>
+        <option value="grok-4.1-fast">grok-4.1-fast (cheap/fast)</option>
+      </select>
+      <button class="save-btn" id="saveKey">Save for this session</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  apiKey: '',
+  chatModel: 'grok-4.3',
+  history: [],
+  mode: 'chat',
+  videoAspect: '16:9'
+};
+
+// starfield
+(function(){
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  let stars = [];
+  function resize(){
+    c.width = innerWidth; c.height = innerHeight;
+    stars = Array.from({length: 90}, () => ({
+      x: Math.random()*c.width, y: Math.random()*c.height,
+      r: Math.random()*1.3+0.2, a: Math.random(), s: Math.random()*0.015+0.003
+    }));
+  }
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const s of stars){
+      s.a += s.s;
+      const op = (Math.sin(s.a)+1)/2*0.8+0.15;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, 7);
+      ctx.fillStyle = `rgba(242,238,233,${op})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  addEventListener('resize', resize);
+  resize(); draw();
+})();
+
+const feed = document.getElementById('feed');
+const emptyState = document.getElementById('emptyState');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const orb = document.getElementById('orb');
+const modelLabel = document.getElementById('modelLabel');
+const videoOptions = document.getElementById('videoOptions');
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    state.mode = t.dataset.tab;
+    modelLabel.textContent = state.mode + ' mode';
+    videoOptions.style.display = state.mode === 'video' ? 'flex' : 'none';
+    input.placeholder = state.mode === 'chat' ? 'Speak to Kaali...' :
+                         state.mode === 'image' ? 'Describe the image to conjure...' :
+                         'Describe the video to conjure...';
+  });
+});
+
+document.querySelectorAll('.chip[data-ar]').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    document.querySelectorAll('.chip[data-ar]').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+    state.videoAspect = c.dataset.ar;
+  });
+});
+
+const modalWrap = document.getElementById('modalWrap');
+document.getElementById('openSettings').onclick = ()=> modalWrap.classList.add('show');
+document.getElementById('closeModal').onclick = ()=> modalWrap.classList.remove('show');
+document.getElementById('saveKey').onclick = ()=>{
+  state.apiKey = document.getElementById('apiKeyInput').value.trim();
+  state.chatModel = document.getElementById('chatModel').value;
+  modalWrap.classList.remove('show');
+  if(state.apiKey) addMessage('kaali', 'Key received — for this session only. I\'m listening.');
+};
+if(!state.apiKey){ setTimeout(()=>modalWrap.classList.add('show'), 400); }
+
+input.addEventListener('input', ()=>{
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 110) + 'px';
+});
+input.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+sendBtn.onclick = send;
+
+function addMessage(who, text, mediaEl){
+  emptyState.style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + who;
+  const label = document.createElement('div');
+  label.className = 'who';
+  label.textContent = who === 'kaali' ? 'Kaali' : 'You';
+  wrap.appendChild(label);
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  if(mediaEl){ wrap.appendChild(mediaEl); }
+  feed.appendChild(wrap);
+  feed.scrollTop = feed.scrollHeight;
+  return wrap;
+}
+
+function addTyping(){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg kaali';
+  wrap.id = 'typingIndicator';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble typing';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+  wrap.appendChild(bubble);
+  feed.appendChild(wrap);
+  feed.scrollTop = feed.scrollHeight;
+}
+function removeTyping(){
+  const t = document.getElementById('typingIndicator');
+  if(t) t.remove();
+}
+
+async function send(){
+  const text = input.value.trim();
+  if(!text) return;
+  if(!state.apiKey){
+    modalWrap.classList.add('show');
+    return;
+  }
+  addMessage('user', text);
+  input.value = '';
+  input.style.height = 'auto';
+  sendBtn.disabled = true;
+  orb.classList.add('busy');
+  addTyping();
+
+  try{
+    if(state.mode === 'chat'){
+      await runChat(text);
+    } else if(state.mode === 'image'){
+      await runImage(text);
+    } else {
+      await runVideo(text);
+    }
+  }catch(err){
+    removeTyping();
+    addMessage('kaali', 'Something broke the veil: ' + err.message);
+  }finally{
+    sendBtn.disabled = false;
+    orb.classList.remove('busy');
+  }
+}
+
+async function runChat(text){
+  state.history.push({role:'user', content:text});
+  const res = await fetch('https://api.x.ai/v1/chat/completions', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + state.apiKey
+    },
+    body: JSON.stringify({
+      model: state.chatModel,
+      messages: [
+        {role:'system', content:'You are Kaali, a bold, warm, sharp-witted AI companion. Keep replies natural and conversational, not overly long.'},
+        ...state.history
+      ]
+    })
+  });
+  removeTyping();
+  if(!res.ok){
+    const errText = await res.text();
+    throw new Error('API error ' + res.status + ' — ' + errText.slice(0,180));
+  }
+  const data = await res.json();
+  const reply = data.choices?.[0]?.message?.content || '(empty response)';
+  state.history.push({role:'assistant', content:reply});
+  addMessage('kaali', reply);
+}
+
+async function runImage(prompt){
+  const res = await fetch('https://api.x.ai/v1/images/generations', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + state.apiKey
+    },
+    body: JSON.stringify({ model: 'grok-imagine-image-quality', prompt })
+  });
+  removeTyping();
+  if(!res.ok){
+    const errText = await res.text();
+    throw new Error('API error ' + res.status + ' — ' + errText.slice(0,180));
+  }
+  const data = await res.json();
+  const url = data.data?.[0]?.url;
+  if(!url) throw new Error('no image url returned');
+  const media = document.createElement('div');
+  media.className = 'media';
+  media.innerHTML = `<img src="${url}" alt="generated image">`;
+  addMessage('kaali', prompt, media);
+}
+
+async function runVideo(prompt){
+  const startRes = await fetch('https://api.x.ai/v1/videos/generations', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + state.apiKey
+    },
+    body: JSON.stringify({
+      model: 'grok-imagine-video-1.5',
+      prompt,
+      aspect_ratio: state.videoAspect,
+      duration: 10
+    })
+  });
+  if(!startRes.ok){
+    const errText = await startRes.text();
+    removeTyping();
+    throw new Error('API error ' + startRes.status + ' — ' + errText.slice(0,180));
+  }
+  const startData = await startRes.json();
+  const requestId = startData.request_id;
+  if(!requestId) { removeTyping(); throw new Error('no request_id returned'); }
+
+  let attempts = 0;
+  while(attempts < 60){
+    await new Promise(r=>setTimeout(r, 5000));
+    const pollRes = await fetch('https://api.x.ai/v1/videos/' + requestId, {
+      headers:{ 'Authorization':'Bearer ' + state.apiKey }
+    });
+    const pollData = await pollRes.json();
+    if(pollData.status === 'done'){
+      removeTyping();
+      const media = document.createElement('div');
+      media.className = 'media';
+      media.innerHTML = `<video src="${pollData.video.url}" controls playsinline></video>`;
+      addMessage('kaali', prompt, media);
+      return;
+    }
+    if(pollData.status === 'failed' || pollData.status === 'expired'){
+      removeTyping();
+      throw new Error('video generation ' + pollData.status);
+    }
+    attempts++;
+  }
+  removeTyping();
+  throw new Error('timed out waiting for video');
+}
+</script>
+</body>
+</html>
